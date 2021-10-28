@@ -98,6 +98,10 @@ object Dependencies {
         const val testing = "androidx.fragment:fragment-testing:${Versions.fragment}"
     }
 
+    object GooglePlayServices {
+        const val location = "com.google.android.gms:play-services-location:${Versions.location}"
+    }
+
     object Kotlin {
         const val stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${Versions.kotlin}"
         const val testJunit = "org.jetbrains.kotlin:kotlin-test-junit:${Versions.kotlin}"
