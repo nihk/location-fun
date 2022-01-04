@@ -23,14 +23,13 @@ class MainFragment @Inject constructor(
     private val viewModel: MainViewModel by viewModels { factory.create(this) }
 
     private val locationRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-        viewModel.tryEmittingLocationData()
+        viewModel.processEvent(Event.GetLocationData(start = true))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val binding = MainFragmentBinding.bind(view)
 
         viewModel.viewStates
-            .flowWithLifecycle(viewLifecycleOwner.lifecycle)
             .onEach { viewState ->
                 when (viewState.locationData) {
                     is LocationData.Available -> {
@@ -52,5 +51,17 @@ class MainFragment @Inject constructor(
                 )
             )
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        viewModel.processEvent(Event.GetLocationData(start = true))
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Keep location emissions coming across config changes. Only stop them when backgrounding the app
+        if (requireActivity().isChangingConfigurations) return
+        viewModel.processEvent(Event.GetLocationData(start = false))
     }
 }

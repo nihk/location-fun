@@ -18,26 +18,52 @@ class MainViewModel(
     private val handle: SavedStateHandle
 ) : ViewModel() {
 
-    private val events = MutableSharedFlow<Unit>()
+    private val events = MutableSharedFlow<Event>()
     val viewStates: Flow<ViewState> = events
-        .onStart { emit(Unit) }
-        .flatMapLatest { client.locationData() }
-        // Note: ViewState as is won't survive resubscriptions
-        .scan(ViewState()) { viewState, data ->
-            viewState.copy(
-                count = viewState.count + 1,
-                locationData = data
-            )
+        .share()
+        .toResults()
+        .scan(ViewState()) { viewState, result ->
+            when (result) {
+                is Result.GotLocationResult -> viewState.copy(
+                    count = viewState.count + 1,
+                    locationData = result.locationData
+                )
+                else -> viewState
+            }
+
         }
-        .shareIn(
+        .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(2_000L),
-            replay = 1
+            started = SharingStarted.WhileSubscribed(1_000L),
+            initialValue = ViewState()
         )
 
-    fun tryEmittingLocationData() {
+    fun processEvent(event: Event) {
         viewModelScope.launch {
-            events.emit(Unit)
+            events.emit(event)
+        }
+    }
+
+    private fun <T> Flow<T>.share(): SharedFlow<T> {
+        return shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily
+        )
+    }
+
+    private fun Flow<Event>.toResults(): Flow<Result> {
+        return merge(
+            filterIsInstance<Event.GetLocationData>().toLocationResults()
+        )
+    }
+
+    private fun Flow<Event.GetLocationData>.toLocationResults(): Flow<Result> {
+        return distinctUntilChanged().flatMapLatest { event ->
+            if (event.start) {
+                client.locationData().mapLatest { locationData -> Result.GotLocationResult(locationData) }
+            } else {
+                flowOf(Result.NoOpResult)
+            }
         }
     }
 
@@ -58,6 +84,15 @@ class MainViewModel(
             }
         }
     }
+}
+
+sealed class Event {
+    data class GetLocationData(val start: Boolean) : Event()
+}
+
+sealed class Result {
+    data class GotLocationResult(val locationData: LocationData) : Result()
+    object NoOpResult : Result()
 }
 
 data class ViewState(

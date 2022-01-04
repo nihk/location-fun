@@ -53,8 +53,6 @@ class GooglePlayLocationClient @Inject constructor(
             Looper.getMainLooper()
         )
 
-//        trySend(client.lastLocation.await().toAvailable())
-
         awaitClose {
             Log.d("asdf", "removeLocationUpdates")
             client.removeLocationUpdates(callback)
