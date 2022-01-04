@@ -41,7 +41,6 @@ dependencies {
     implementation(Dependencies.OkHttp.loggingInterceptor)
     implementation(Dependencies.multidex)
     implementation(Dependencies.coil)
-    implementation(Dependencies.Work.runtime)
     implementation(Dependencies.GooglePlayServices.location)
     implementation(Dependencies.Lifecycle.runtime)
 
